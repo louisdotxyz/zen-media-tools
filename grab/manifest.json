@@ -1,0 +1,36 @@
+{
+  "manifest_version": 2,
+  "name": "Grab",
+  "version": "0.1.0",
+  "description": "Bilder und Videos von Pinterest und Are.na in Originalqualität herunterladen – mit Hover-Button oder Rechtsklick.",
+  "author": "Louis Widmer",
+  "icons": { "48": "icons/grab.svg", "96": "icons/grab.svg" },
+  "permissions": [
+    "downloads",
+    "menus",
+    "*://*.pinterest.com/*", "*://*.pinterest.ch/*", "*://*.pinterest.de/*",
+    "*://*.pinterest.at/*", "*://*.pinterest.co.uk/*", "*://*.pinterest.fr/*",
+    "*://*.pinimg.com/*",
+    "*://*.are.na/*", "*://are.na/*", "*://api.are.na/*", "*://*.cloudfront.net/*"
+  ],
+  "background": { "scripts": ["lib.js", "background.js"] },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.pinterest.com/*", "*://*.pinterest.ch/*", "*://*.pinterest.de/*",
+        "*://*.pinterest.at/*", "*://*.pinterest.co.uk/*", "*://*.pinterest.fr/*",
+        "*://*.are.na/*", "*://are.na/*"
+      ],
+      "js": ["lib.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "grab@louisdotxyz",
+      "strict_min_version": "140.0",
+      "update_url": "https://raw.githubusercontent.com/louisdotxyz/zen-media-tools/main/grab/updates.json",
+      "data_collection_permissions": { "required": ["none"] }
+    }
+  }
+}

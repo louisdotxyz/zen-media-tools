@@ -1,0 +1,34 @@
+{
+  "manifest_version": 2,
+  "name": "Pin It",
+  "version": "0.1.0",
+  "description": "Bilder von jeder Website auf Pinterest speichern – Hover-Button, Rechtsklick oder Bildauswahl über das Symbol.",
+  "author": "Louis Widmer",
+  "icons": { "48": "icons/pinit.svg", "96": "icons/pinit.svg" },
+  "permissions": ["menus", "<all_urls>"],
+  "browser_action": {
+    "default_title": "Bild auf Pinterest speichern",
+    "default_icon": "icons/pinit-dark.svg",
+    "theme_icons": [
+      { "light": "icons/pinit-light.svg", "dark": "icons/pinit-dark.svg", "size": 16 },
+      { "light": "icons/pinit-light.svg", "dark": "icons/pinit-dark.svg", "size": 32 }
+    ]
+  },
+  "background": { "scripts": ["background.js"] },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "exclude_matches": ["*://*.pinterest.com/*", "*://*.pinterest.ch/*", "*://*.pinterest.de/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "pinit@louisdotxyz",
+      "strict_min_version": "140.0",
+      "update_url": "https://raw.githubusercontent.com/louisdotxyz/zen-media-tools/main/pinit/updates.json",
+      "data_collection_permissions": { "required": ["none"] }
+    }
+  }
+}

@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths: ["grab/manifest.json", "pinit/manifest.json"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        ext: [grab, pinit]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      - name: Version lesen
+        id: version
+        run: echo "value=$(node -p "require('./${{ matrix.ext }}/manifest.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Schon veröffentlicht?
+        id: exists
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          if gh release view "${{ matrix.ext }}-v${{ steps.version.outputs.value }}" >/dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Test
+        if: steps.exists.outputs.skip == 'false'
+        run: node tests/lib.test.js
+
+      - name: Bei Mozilla signieren (unlisted)
+        if: steps.exists.outputs.skip == 'false'
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
+          WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+        run: |
+          npx --yes web-ext@8 lint --source-dir ${{ matrix.ext }} --ignore-files updates.json
+          npx --yes web-ext@8 sign \
+            --channel=unlisted \
+            --source-dir ${{ matrix.ext }} \
+            --artifacts-dir dist \
+            --approval-timeout 900000 \
+            --ignore-files updates.json
+          mv dist/*.xpi "dist/${{ matrix.ext }}-${{ steps.version.outputs.value }}.xpi"
+
+      - name: GitHub-Release anlegen
+        if: steps.exists.outputs.skip == 'false'
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          V="${{ steps.version.outputs.value }}"
+          gh release create "${{ matrix.ext }}-v$V" "dist/${{ matrix.ext }}-$V.xpi" \
+            --title "${{ matrix.ext }} $V" \
+            --notes "Signiert von Mozilla. Zen aktualisiert installierte Versionen automatisch."
+
+      - name: updates.json aktualisieren
+        if: steps.exists.outputs.skip == 'false'
+        run: |
+          V="${{ steps.version.outputs.value }}"
+          git pull --rebase -q
+          node scripts/add-update.js ${{ matrix.ext }} "$V" \
+            "https://github.com/${{ github.repository }}/releases/download/${{ matrix.ext }}-v$V/${{ matrix.ext }}-$V.xpi"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ${{ matrix.ext }}/updates.json
+          git commit -m "${{ matrix.ext }}: updates.json $V"
+          git push
