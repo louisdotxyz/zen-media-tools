@@ -89,7 +89,16 @@
         name: block.attachment.filename,
       }];
     }
-    if (block.type === "Embed") return [{ kind: "embed", candidates: [], source: block.embed && (block.embed.source_url || block.embed.url) }];
+    if (block.type === "Embed") {
+      // YouTube/Vimeo lassen sich nicht direkt laden -> Vorschaubild
+      const provider = block.source && block.source.provider && block.source.provider.name;
+      return [{
+        kind: "embed",
+        candidates: block.image && block.image.src ? [block.image.src] : [],
+        name: block.image && block.image.filename,
+        provider: provider || "Video",
+      }];
+    }
     if (block.image && block.image.src) {
       return [{ kind: "image", candidates: [block.image.src], name: block.image.filename }];
     }
@@ -98,6 +107,15 @@
 
   // Are.na-CDN: large_/display_/thumb_ -> original_
   function arenaOriginal(src) {
+    // images.are.na/<base64 {bucket,key,edits}> -> Original ohne Verkleinerung
+    const m = String(src || "").match(/images\.are\.na\/([\w\-=]+)/);
+    if (m) {
+      try {
+        const b64 = m[1].replace(/-/g, "+").replace(/_/g, "/");
+        const key = JSON.parse(atob(b64)).key;
+        if (key) return `https://d2w9rnfcy7mm78.cloudfront.net/${key}`;
+      } catch (_) { /* weiter unten */ }
+    }
     if (!/(cloudfront\.net|are\.na)\//.test(src || "")) return null;
     const out = src.replace(/\/(thumb|display|large|medium|small|square)_/, "/original_");
     return out === src ? null : out;

@@ -219,12 +219,13 @@
     try {
       const items = SITE === "pinterest" ? await resolvePinterest(media) : await resolveArena(media);
       const embed = items.find((i) => i.kind === "embed");
-      if (embed) throw new Error("Eingebettetes Video (YouTube, Vimeo …) – kann nicht direkt geladen werden");
+      if (embed && !embed.candidates.length) throw new Error(`${embed.provider} ist eingebettet – kann nicht direkt geladen werden`);
       if (!items.length) throw new Error("Kein Bild oder Video gefunden");
       const res = await browser.runtime.sendMessage({ type: "download", items });
       if (!res || !res.saved.length) throw new Error((res && res.error) || "Download fehlgeschlagen");
       setIcon("ok");
-      toast(res.saved.length > 1 ? `${res.saved.length} Dateien gespeichert` : `Gespeichert: ${res.saved[0]}`);
+      if (embed) toast(`${embed.provider}-Video ist eingebettet – Vorschaubild gespeichert`);
+      else toast(res.saved.length > 1 ? `${res.saved.length} Dateien gespeichert` : `Gespeichert: ${res.saved[0]}`);
     } catch (e) {
       setIcon("err");
       toast(e.message || String(e));

@@ -21,6 +21,8 @@ assert.strictEqual(L.pinimgOriginal("https://i.pinimg.com/236x/ab/cd/ef/x.jpg"),
 assert.strictEqual(L.arenaOriginal("https://d2w9rnfcy7mm78.cloudfront.net/123/large_foo.jpg?1"), "https://d2w9rnfcy7mm78.cloudfront.net/123/original_foo.jpg?1");
 assert.strictEqual(L.arenaMedia({ type: "Attachment", attachment: { url: "u.mp4", content_type: "video/mp4", filename: "u.mp4" } })[0].kind, "video");
 assert.strictEqual(L.arenaMedia({ type: "Image", image: { src: "o.jpg", filename: "o.jpg" } })[0].candidates[0], "o.jpg");
-assert.strictEqual(L.arenaMedia({ type: "Embed", embed: { url: "yt" } })[0].kind, "embed");
+assert.strictEqual(L.arenaMedia({ type: "Embed", embed: {}, image: { src: "t.jpg" }, source: { provider: { name: "vimeo.com" } } })[0].candidates[0], "t.jpg");
+const key = Buffer.from(JSON.stringify({ bucket: "arena_images", key: "27019512/original_abc.jpg", edits: {} })).toString("base64");
+assert.strictEqual(L.arenaOriginal("https://images.are.na/" + key), "https://d2w9rnfcy7mm78.cloudfront.net/27019512/original_abc.jpg");
 assert.strictEqual(L.pinIdFromUrl("https://ch.pinterest.com/pin/123456/"), "123456");
 console.log("ok");
